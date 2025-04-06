@@ -13,5 +13,19 @@ CHIP PC {
     OUT out[16];
     
     PARTS:
-    //// Replace this comment with your code.
+    // register
+    Register(in=wirereset, load=true, out=wirereg, out=out);
+    Inc16(in=wirereg, out=wireincrement);
+
+    // enable inc
+    Mux16(a=in, b=wireincrement, sel=inc, out=wireinc);
+
+    // enable load
+    Mux16(a=wireinc, b=in, sel=load, out=wireload);
+
+    // enable reset
+    Mux16(a=wireload, b=false, sel=reset, out=wirereset);
+
+    // Optimized using 1 chip
+    // Mux8Way16(a=wirereg, b=wireincrement, c=in, d=in, e=false, f=false, g=false, h=false, sel[0]=inc, sel[1]=load, sel[2]=reset, out=wirereset);
 }
