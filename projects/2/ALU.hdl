@@ -40,5 +40,35 @@ CHIP ALU {
         ng;      // if (out < 0)  equals 1, else 0
 
     PARTS:
-    //// Replace this comment with your code.
+    // zx -> if (zx == 1) sets x = 0
+    Mux16(a=x, b=false, sel=zx, out=wirezx);
+
+    // nx -> if (nx == 1) sets x = !x
+    Not16(in=wirezx, out=notx);
+    Mux16(a=wirezx, b=notx, sel=nx, out=wirenx);
+
+    // zy -> if (zy == 1) sets x = 0
+    Mux16(a=y, b=false, sel=zy, out=wirezy);
+
+    // ny -> if (ny == 1) sets y = !y
+    Not16(in=wirezy, out=noty);
+    Mux16(a=wirezy, b=noty, sel=ny, out=wireny);
+
+    // f -> if (f == 1)  sets out = x + y
+    // f -> if (f == 1)  sets out = x + y
+    Add16(a=wirenx, b=wireny, out=wiref1);
+    And16(a=wirenx, b=wireny, out=wiref2);
+    Mux16(a=wiref2, b=wiref1, sel=f, out=wiref);
+
+    // no -> if (no == 1) sets out = !out
+    // in here we also split the output of ALU for zr and ng check
+    // ng = MSB (two complement negative)
+    Not16(in=wiref, out=notwiref);
+    Mux16(a=wiref, b=notwiref, sel=no, out=out, out[0..7]=out0to7, out[8..15]=out8to15, out[15]=ng);
+
+    // if (out == 0) zr = 1, else zr = 0
+    Or8Way(in=out0to7, out=wirezr1);
+    Or8Way(in=out8to15, out=wirezr2);
+    Or(a=wirezr1, b=wirezr2, out=wirezr3);
+    Not(in=wirezr3, out=zr);
 }
