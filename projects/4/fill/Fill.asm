@@ -10,25 +10,25 @@
 
 (START)
 
-// i = 1
+// i = 0
 @i
 M=0
 
-// max_loop = 8191 <= 256x512/16 - 1
-@8191
+// max_loop = 8192 <= 256x512/16
+@8192
 D=A
 @max_loop
 M=D
 
 (LOOP)
 
-// if(i > max_loop) goto START
+// if(i == max_loop) goto START
 @i
 D=M
 @max_loop
 D=D-M
 @START
-D;JGT
+D;JEQ
 
 //if(@KBD != 0) goto BLACK else goto WHITE
 @KBD
