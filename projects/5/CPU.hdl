@@ -31,5 +31,72 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-	//// Replace this comment with your code.
+    // writeM
+    And(a=instruction[15], b=instruction[3], out=writeM);
+
+    // AC Mux (A instruction or C instruction)
+    Mux16(a=instruction, b=wALU, sel=instruction[15], out=wACMUX);
+
+    // A register
+    Not(in=instruction[15], out=wNOT15);
+    Or(a=wNOT15, b=instruction[5], out=wLOADA);
+    ARegister(in=wACMUX, load=wLOADA, out=wAREG, out[0..14]=addressM);
+
+    // Comp MUX (A or M)
+    Mux16(a=wAREG, b=inM, sel=instruction[12], out=wCOMPMUX);
+	
+    // D register
+    And(a=instruction[15], b=instruction[4], out=wLOADD);
+    DRegister(in=wALU, load=wLOADD, out=wDREG);
+
+    // ALU
+    ALU(x=wDREG, y=wCOMPMUX, zx=instruction[11], nx=instruction[10],
+        zy=instruction[9], ny=instruction[8], f=instruction[7],
+        no=instruction[6], out=wALU, out=outM, zr=wZR, ng=wNG);
+    
+    // PC
+    PC(in=wAREG, load=wLOADPC, inc=wINCPC, reset=reset, out[0..14]=pc);
+
+    // JUMP
+    // JEQ: comp == 0
+    And(a=instruction[1], b=wZR, out=wJEQ);
+
+    // JLT: comp < 0
+    And(a=instruction[2], b=wNG, out=wJLT);
+
+    // JGT: comp > 0
+    Not(in=wZR, out=wnotZR);
+    Not(in=wNG, out=wnotNG);
+    And(a=wnotZR, b=wnotNG, out=wnotANDandnotZRNG);
+    And(a=instruction[0], b=wnotANDandnotZRNG, out=wJGT);
+
+    // JGE: comp >= 0
+    And(a=instruction[0], b=instruction[1], out=wI01);
+    Or(a=wJGT, b=wJEQ, out=wJGTorJEQ);
+    And(a=wI01, b=wJGTorJEQ, out=wJGE);
+
+    // JLE: comp <= 0
+    And(a=instruction[2], b=instruction[1], out=wI21);
+    Or(a=wJLT, b=wJEQ, out=wJLTorJEQ);
+    And(a=wI21, b=wJLTorJEQ, out=wJLE);
+
+    // JNE: comp != 0
+    And(a=instruction[2], b=instruction[0], out=wI20);
+    Or(a=wJLT, b=wJGT, out=wJLTorJGT);
+    And(a=wI20, b=wJLTorJGT, out=wJNE);
+
+    // JMP: Jump
+    And(a=wI01, b=wI21, out=wJMP);
+
+    // ALL JUMP OR
+    Or(a=wJEQ, b=wJLT, out=wOR1);
+    Or(a=wJGT, b=wOR1, out=wOR2);
+    Or(a=wJGE, b=wOR2, out=wOR3);
+    Or(a=wJLE, b=wOR3, out=wOR4);
+    Or(a=wJNE, b=wOR4, out=wOR5);
+    Or(a=wJMP, b=wOR5, out=wOR6);
+
+    // wLOADPC
+    And(a=instruction[15], b=wOR6, out=wLOADPC);
+    Not(in=wLOADPC, out=wINCPC);
 }
